@@ -1,52 +1,91 @@
 package com.ai.astar;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.PriorityQueue;
+import java.util.Set;
 
 /**
  * A Star Algorithm in Orthogonal Directions
- * A modified version of the A Star Algorithm by Marcelo Surriabre
+ * A modified version of the A Star Algorithm by Marcelo Surriabre that
+ * only allows horizontal and vertical movement using one set cost.
+ *
  * @author Marcelo Surriabre
  * @version 2.1, 2017-02-23
  * @author Mark Gottschling on Sept 26, 2020
  * 
  */
 public class AStarOrthogonal {
-    private static int DEFAULT_ORTHOGONAL_COST = 10; // horizontal - vertical cost
-    private int cost;
+	/*
+	 *  cost of movement
+	 */
+    private static int ORTHOGONAL_COST = 10;
+    
+    /*
+     * matrix of nodes used to search for path
+     */
     private Node[][] searchArea;
+    
     private PriorityQueue<Node> openList;
     private Set<Node> closedSet;
-    private Node initialNode;
-    private Node finalNode;
 
+    /*
+     * the map that is to be traversed
+     */
+    private boolean[][] map;
+    
+    /**
+     * 
+     * @param map
+     */
     public AStarOrthogonal(boolean[][] map) {
-
-    }
-
-    public AStarOrthogonal(int rows, int cols, Node initialNode, Node finalNode, int cost) {
-        this.cost = cost;
-        setInitialNode(initialNode);
-        setFinalNode(finalNode);
-        this.searchArea = new Node[rows][cols];
-        this.openList = new PriorityQueue<Node>(new Comparator<Node>() {
+    	setMap(map);
+    	setSearchArea(new Node[map.length][map[0].length]);
+        setOpenList(new PriorityQueue<Node>(new Comparator<Node>() {
             @Override
             public int compare(Node node0, Node node1) {
                 return Integer.compare(node0.getF(), node1.getF());
             }
-        });
-        setNodes();
-        this.closedSet = new HashSet<>();
+        }));
+        setClosedSet(new HashSet<>());
     }
-
-    public AStarOrthogonal(int rows, int cols, Node initialNode, Node finalNode) {
-        this(rows, cols, initialNode, finalNode, DEFAULT_ORTHOGONAL_COST);
+    
+    /**
+     * 
+     * @return
+     */
+    public List<Node> findPath(Node initialNode, Node finalNode) {
+    	// initialize
+    	getOpenList().clear();
+    	getClosedSet().clear();
+    	initNodes(finalNode);
+    	setBlocks(getMap());
+    	
+    	// add initial node to the open list
+        openList.add(initialNode);
+        while (!isEmpty(openList)) {
+            Node currentNode = openList.poll();
+            closedSet.add(currentNode);
+            if (isFinalNode(currentNode, finalNode)) {
+                return getPath(currentNode);
+            } else {
+                addAdjacentNodes(currentNode);
+            }
+        }
+        return new ArrayList<Node>();
     }
-
-    private void setNodes() {
+    
+    /**
+     * 
+     * @param finalNode
+     */
+    private void initNodes(Node finalNode) {
         for (int i = 0; i < searchArea.length; i++) {
             for (int j = 0; j < searchArea[0].length; j++) {
                 Node node = new Node(i, j);
-                node.calculateHeuristic(getFinalNode());
+                node.calculateHeuristic(finalNode);
                 this.searchArea[i][j] = node;
             }
         }
@@ -65,7 +104,9 @@ public class AStarOrthogonal {
     }
 
     /**
-     * Takes an input array describing the entire map that is to be traversed.
+     * Takes an input array describing the entire map that is to be traversed where:
+     * 	true = blocked
+     * 	false = open
      * @param blocksMatrix
      */
     public void setBlocks(boolean[][] blocksMatrix) {
@@ -78,20 +119,11 @@ public class AStarOrthogonal {
         }
     }
 
-    public List<Node> findPath() {
-        openList.add(initialNode);
-        while (!isEmpty(openList)) {
-            Node currentNode = openList.poll();
-            closedSet.add(currentNode);
-            if (isFinalNode(currentNode)) {
-                return getPath(currentNode);
-            } else {
-                addAdjacentNodes(currentNode);
-            }
-        }
-        return new ArrayList<Node>();
-    }
-
+    /**
+     * 
+     * @param currentNode
+     * @return
+     */
     private List<Node> getPath(Node currentNode) {
         List<Node> path = new ArrayList<Node>();
         path.add(currentNode);
@@ -114,7 +146,7 @@ public class AStarOrthogonal {
         int col = currentNode.getCol();
         int lowerRow = row + 1;
         if (lowerRow < getSearchArea().length) {
-            checkNode(currentNode, col, lowerRow, getCost());
+            checkNode(currentNode, col, lowerRow);
         }
     }
 
@@ -123,10 +155,10 @@ public class AStarOrthogonal {
         int col = currentNode.getCol();
         int middleRow = row;
         if (col - 1 >= 0) {
-            checkNode(currentNode, col - 1, middleRow, getCost());
+            checkNode(currentNode, col - 1, middleRow);
         }
         if (col + 1 < getSearchArea()[0].length) {
-            checkNode(currentNode, col + 1, middleRow, getCost());
+            checkNode(currentNode, col + 1, middleRow);
         }
     }
 
@@ -135,18 +167,18 @@ public class AStarOrthogonal {
         int col = currentNode.getCol();
         int upperRow = row - 1;
         if (upperRow >= 0) {
-            checkNode(currentNode, col, upperRow, getCost());
+            checkNode(currentNode, col, upperRow);
         }
     }
 
-    private void checkNode(Node currentNode, int col, int row, int cost) {
+    private void checkNode(Node currentNode, int col, int row) {
         Node adjacentNode = getSearchArea()[row][col];
         if (!adjacentNode.isBlock() && !getClosedSet().contains(adjacentNode)) {
             if (!getOpenList().contains(adjacentNode)) {
-                adjacentNode.setNodeData(currentNode, cost);
+                adjacentNode.setNodeData(currentNode, ORTHOGONAL_COST);
                 getOpenList().add(adjacentNode);
             } else {
-                boolean changed = adjacentNode.checkBetterPath(currentNode, cost);
+                boolean changed = adjacentNode.checkBetterPath(currentNode, ORTHOGONAL_COST);
                 if (changed) {
                     // Remove and Add the changed node, so that the PriorityQueue can sort again its
                     // contents with the modified "finalCost" value of the modified node
@@ -156,8 +188,8 @@ public class AStarOrthogonal {
             }
         }
     }
-
-    private boolean isFinalNode(Node currentNode) {
+    
+    private boolean isFinalNode(Node currentNode, Node finalNode) {
         return currentNode.equals(finalNode);
     }
 
@@ -167,22 +199,6 @@ public class AStarOrthogonal {
 
     private void setBlock(int row, int col) {
         this.searchArea[row][col].setBlock(true);
-    }
-
-    public Node getInitialNode() {
-        return initialNode;
-    }
-
-    private void setInitialNode(Node initialNode) {
-        this.initialNode = initialNode;
-    }
-
-    public Node getFinalNode() {
-        return finalNode;
-    }
-
-    private void setFinalNode(Node finalNode) {
-        this.finalNode = finalNode;
     }
 
     private Node[][] getSearchArea() {
@@ -209,12 +225,12 @@ public class AStarOrthogonal {
         this.closedSet = closedSet;
     }
 
-    public int getCost() {
-        return cost;
-    }
+	public boolean[][] getMap() {
+		return map;
+	}
 
-    private void setCost(int hvCost) {
-        this.cost = hvCost;
-    }
+	public void setMap(boolean[][] map) {
+		this.map = map;
+	}
 }
 
