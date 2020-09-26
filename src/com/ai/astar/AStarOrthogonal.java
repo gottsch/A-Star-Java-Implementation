@@ -10,7 +10,8 @@ import java.util.Set;
 /**
  * A Star Algorithm in Orthogonal Directions
  * A modified version of the A Star Algorithm by Marcelo Surriabre that
- * only allows horizontal and vertical movement using one set cost.
+ * only allows horizontal and vertical movement using one cost and a 
+ * penalty cost for changing directions.
  * 
  * A Star selects the path that minimizes
  * f(n)=g(n)+h(n)
