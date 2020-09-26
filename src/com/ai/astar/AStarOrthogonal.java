@@ -17,6 +17,9 @@ import java.util.Set;
  * @author Mark Gottschling on Sept 26, 2020
  * 
  */
+
+// TODO need to add direction currently traveling in.
+// TODO add a cost penality if direction is changed.
 public class AStarOrthogonal {
 	/*
 	 *  cost of movement
