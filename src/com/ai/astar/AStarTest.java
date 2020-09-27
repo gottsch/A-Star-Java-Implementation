@@ -21,12 +21,12 @@ public class AStarTest {
         System.out.println("=== A Star Orthongonal ===========");
         System.out.println("=== (2,1) -> (2, 5)  ===========");
         AStarOrthogonal aStarO = new AStarOrthogonal(map);
-        List<Node> pathO = aStarO.findPath(initialNode, finalNode);
+        List<Node> pathO = aStarO.findPath(initialNode, finalNode).get();
         for (Node node : pathO) {
             System.out.println(node);
         }
         System.out.println("=== (1,1) -> (2, 5)  ===========");
-        List<Node> pathO2 = aStarO.findPath(new Node(2, 0), finalNode);
+        List<Node> pathO2 = aStarO.findPath(new Node(2, 0), finalNode).get();
         for (Node node : pathO2) {
             System.out.println(node);
         }

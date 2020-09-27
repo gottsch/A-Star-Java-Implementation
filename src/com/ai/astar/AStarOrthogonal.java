@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.PriorityQueue;
 import java.util.Set;
 
@@ -36,7 +37,7 @@ public class AStarOrthogonal {
     /*
      * penalty cost of changing direction
      */
-    private static int DIRECTION_CHANGE_PENALTY = 5;
+    private static int DIRECTION_CHANGE_PENALTY = 10;
 
     /*
      * matrix of nodes used to search for path
@@ -71,7 +72,7 @@ public class AStarOrthogonal {
      * 
      * @return
      */
-    public List<Node> findPath(Node initialNode, Node finalNode) {
+    public Optional<List<Node>> findPath(Node initialNode, Node finalNode) {
     	// initialize
     	getOpenList().clear();
     	getClosedSet().clear();
@@ -84,12 +85,12 @@ public class AStarOrthogonal {
             Node currentNode = openList.poll();
             closedSet.add(currentNode);
             if (isFinalNode(currentNode, finalNode)) {
-                return getPath(currentNode);
+                return Optional.of(getPath(currentNode));
             } else {
                 addAdjacentNodes(currentNode);
             }
         }
-        return new ArrayList<Node>();
+        return Optional.empty();
     }
     
     /**
