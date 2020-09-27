@@ -4,25 +4,41 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.PriorityQueue;
 import java.util.Set;
 
 /**
  * A Star Algorithm in Orthogonal Directions
  * A modified version of the A Star Algorithm by Marcelo Surriabre that
- * only allows horizontal and vertical movement using one set cost.
+ * only allows horizontal and vertical movement using one cost and a 
+ * penalty cost for changing directions.
+ * 
+ * A Star selects the path that minimizes
+ * f(n)=g(n)+h(n)
+ * where
+ * n = next node on the path
+ * g(n) = cost from the start point to the node
+ * h(n) = heuristic cost from node to the end point
+ * 
  *
  * @author Marcelo Surriabre
  * @version 2.1, 2017-02-23
  * @author Mark Gottschling on Sept 26, 2020
  * 
  */
+
 public class AStarOrthogonal {
 	/*
 	 *  cost of movement
 	 */
     private static int ORTHOGONAL_COST = 10;
     
+    /*
+     * penalty cost of changing direction
+     */
+    private static int DIRECTION_CHANGE_PENALTY = 10;
+
     /*
      * matrix of nodes used to search for path
      */
@@ -41,7 +57,7 @@ public class AStarOrthogonal {
      * @param map
      */
     public AStarOrthogonal(boolean[][] map) {
-    	setMap(map);
+        setMap(map);
     	setSearchArea(new Node[map.length][map[0].length]);
         setOpenList(new PriorityQueue<Node>(new Comparator<Node>() {
             @Override
@@ -56,25 +72,25 @@ public class AStarOrthogonal {
      * 
      * @return
      */
-    public List<Node> findPath(Node initialNode, Node finalNode) {
+    public Optional<List<Node>> findPath(Node initialNode, Node finalNode) {
     	// initialize
     	getOpenList().clear();
     	getClosedSet().clear();
     	initNodes(finalNode);
     	setBlocks(getMap());
-    	
+        
     	// add initial node to the open list
         openList.add(initialNode);
         while (!isEmpty(openList)) {
             Node currentNode = openList.poll();
             closedSet.add(currentNode);
             if (isFinalNode(currentNode, finalNode)) {
-                return getPath(currentNode);
+                return Optional.of(getPath(currentNode));
             } else {
                 addAdjacentNodes(currentNode);
             }
         }
-        return new ArrayList<Node>();
+        return Optional.empty();
     }
     
     /**
@@ -135,6 +151,10 @@ public class AStarOrthogonal {
         return path;
     }
 
+    /**
+     * 
+     * @param currentNode
+     */
     private void addAdjacentNodes(Node currentNode) {
         addAdjacentUpperRow(currentNode);
         addAdjacentMiddleRow(currentNode);
@@ -146,7 +166,9 @@ public class AStarOrthogonal {
         int col = currentNode.getCol();
         int lowerRow = row + 1;
         if (lowerRow < getSearchArea().length) {
-            checkNode(currentNode, col, lowerRow);
+            Node adjacentNode = getSearchArea()[lowerRow][col];
+            adjacentNode.setDirection(Orthogonal.VERTICAL);
+            checkNode(currentNode, adjacentNode);
         }
     }
 
@@ -155,30 +177,48 @@ public class AStarOrthogonal {
         int col = currentNode.getCol();
         int middleRow = row;
         if (col - 1 >= 0) {
-            checkNode(currentNode, col - 1, middleRow);
+            Node adjacentNode = getSearchArea()[middleRow][col - 1];
+            adjacentNode.setDirection(Orthogonal.HORIZONTAL);
+            checkNode(currentNode, adjacentNode);
         }
         if (col + 1 < getSearchArea()[0].length) {
-            checkNode(currentNode, col + 1, middleRow);
+            Node adjacentNode = getSearchArea()[middleRow][col + 1];
+            adjacentNode.setDirection(Orthogonal.HORIZONTAL);
+            checkNode(currentNode, adjacentNode);
         }
     }
 
+    /**
+     * 
+     * @param currentNode
+     */
     private void addAdjacentUpperRow(Node currentNode) {
         int row = currentNode.getRow();
         int col = currentNode.getCol();
         int upperRow = row - 1;
         if (upperRow >= 0) {
-            checkNode(currentNode, col, upperRow);
+            Node adjacentNode = getSearchArea()[upperRow][col];
+            adjacentNode.setDirection(Orthogonal.VERTICAL);
+            checkNode(currentNode, adjacentNode);
         }
     }
 
-    private void checkNode(Node currentNode, int col, int row) {
-        Node adjacentNode = getSearchArea()[row][col];
+    private void checkNode(Node currentNode, Node adjacentNode) {
         if (!adjacentNode.isBlock() && !getClosedSet().contains(adjacentNode)) {
-            if (!getOpenList().contains(adjacentNode)) {
-                adjacentNode.setNodeData(currentNode, ORTHOGONAL_COST);
+            int cost = ORTHOGONAL_COST;
+        	if (!getOpenList().contains(adjacentNode)) {
+                if (currentNode.getDirection() != Orthogonal.NONE
+                    && adjacentNode.getDirection() != currentNode.getDirection()) {
+                    cost += DIRECTION_CHANGE_PENALTY;
+                }
+                adjacentNode.setNodeData(currentNode, cost);
                 getOpenList().add(adjacentNode);
             } else {
-                boolean changed = adjacentNode.checkBetterPath(currentNode, ORTHOGONAL_COST);
+                if (currentNode.getDirection() != Orthogonal.NONE
+                        && adjacentNode.getDirection() != currentNode.getDirection()) {
+                	cost += DIRECTION_CHANGE_PENALTY;
+                }
+                boolean changed = adjacentNode.checkBetterPath(currentNode, cost);
                 if (changed) {
                     // Remove and Add the changed node, so that the PriorityQueue can sort again its
                     // contents with the modified "finalCost" value of the modified node

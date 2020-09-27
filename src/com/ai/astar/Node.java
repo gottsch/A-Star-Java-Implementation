@@ -15,11 +15,13 @@ public class Node {
     private int col;
     private boolean isBlock;
     private Node parent;
+    private Orthogonal direction;
 
     public Node(int row, int col) {
         super();
         this.row = row;
         this.col = col;
+        this.direction = Orthogonal.NONE;
     }
 
     public void calculateHeuristic(Node finalNode) {
@@ -112,5 +114,13 @@ public class Node {
 
     public void setCol(int col) {
         this.col = col;
+    }
+
+    public Orthogonal getDirection() {
+        return direction;
+    }
+
+    public void setDirection(Orthogonal direction) {
+        this.direction = direction;
     }
 }
