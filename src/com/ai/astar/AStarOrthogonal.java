@@ -204,8 +204,8 @@ public class AStarOrthogonal {
 
     private void checkNode(Node currentNode, Node adjacentNode) {
         if (!adjacentNode.isBlock() && !getClosedSet().contains(adjacentNode)) {
-            if (!getOpenList().contains(adjacentNode)) {
-                int cost = ORTHOGONAL_COST;
+            int cost = ORTHOGONAL_COST;
+        	if (!getOpenList().contains(adjacentNode)) {
                 if (currentNode.getDirection() != Orthogonal.NONE
                     && adjacentNode.getDirection() != currentNode.getDirection()) {
                     cost += DIRECTION_CHANGE_PENALTY;
@@ -213,9 +213,11 @@ public class AStarOrthogonal {
                 adjacentNode.setNodeData(currentNode, cost);
                 getOpenList().add(adjacentNode);
             } else {
-                System.out.printf("in the changed path block for currentNode -> %s, adjacentNode -> %s", currentNode, adjacentNode);
-                // TODO does the penalty need to be added here as well?
-                boolean changed = adjacentNode.checkBetterPath(currentNode, ORTHOGONAL_COST);
+                if (currentNode.getDirection() != Orthogonal.NONE
+                        && adjacentNode.getDirection() != currentNode.getDirection()) {
+                	cost += DIRECTION_CHANGE_PENALTY;
+                }
+                boolean changed = adjacentNode.checkBetterPath(currentNode, cost);
                 if (changed) {
                     // Remove and Add the changed node, so that the PriorityQueue can sort again its
                     // contents with the modified "finalCost" value of the modified node
